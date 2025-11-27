@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تحديد موقع الموظف</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.2);
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            text-align: center;
+        }
+
+        .logo {
+            width: 80px;
+            height: 80px;
+            background: #667eea;
+            border-radius: 50%;
+            margin: 0 auto 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 24px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 18px;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 10px 0;
+            width: 100%;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .location-info {
+            background: #f8f9fa;
+            border-radius: 15px;
+            padding: 20px;
+            margin: 20px 0;
+            text-align: right;
+            display: none;
+        }
+
+        .info-item {
+            margin: 10px 0;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .label {
+            font-weight: bold;
+            color: #555;
+        }
+
+        .value {
+            color: #333;
+            margin-top: 5px;
+        }
+
+        .map-link {
+            display: inline-block;
+            background: #28a745;
+            color: white;
+            padding: 10px 20px;
+            border-radius: 25px;
+            text-decoration: none;
+            margin: 10px 0;
+            transition: all 0.3s ease;
+        }
+
+        .map-link:hover {
+            background: #218838;
+            transform: translateY(-2px);
+        }
+
+        .loading {
+            display: none;
+            margin: 20px 0;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+            display: none;
+        }
+
+        .success {
+            background: #d1edff;
+            color: #004085;
+            padding: 15px;
+            border-radius: 10px;
+            margin: 20px 0;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 20px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="logo">📍</div>
+        <h1>تحديد موقع الموظف</h1>
+        <p class="subtitle">انقر على الزر أدناه لمشاركة موقعك الجغرافي</p>
+        
+        <button class="btn" onclick="getLocation()" id="locationBtn">
+            تحديد موقعي الآن
+        </button>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            <p>جاري تحديد الموقع...</p>
+        </div>
+        
+        <div class="error" id="error"></div>
+        
+        <div class="location-info" id="locationInfo">
+            <div class="success">
+                ✓ تم تحديد موقعك بنجاح
+            </div>
+            <div class="info-item">
+                <div class="label">الإحداثيات:</div>
+                <div class="value" id="coordinates"></div>
+            </div>
+            <div class="info-item">
+                <div class="label">الدقة:</div>
+                <div class="value" id="accuracy"></div>
+            </div>
+            <div class="info-item">
+                <div class="label">الوقت:</div>
+                <div class="value" id="timestamp"></div>
+            </div>
+            
+            <a href="#" class="map-link" id="mapLink" target="_blank">
+                📍 عرض على الخريطة
+            </a>
+        </div>
+    </div>
+
+    <script>
+        function getLocation() {
+            const btn = document.getElementById('locationBtn');
+            const loading = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const locationInfo = document.getElementById('locationInfo');
+            
+            // إعادة تعيين العناصر
+            errorDiv.style.display = 'none';
+            locationInfo.style.display = 'none';
+            loading.style.display = 'block';
+            btn.disabled = true;
+            btn.textContent = 'جاري التحديد...';
+
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    showPosition,
+                    showError,
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 0
+                    }
+                );
+            } else {
+                showError({ message: "المتصفح لا يدعم خدمة تحديد الموقع" });
+            }
+        }
+
+        function showPosition(position) {
+            const loading = document.getElementById('loading');
+            const locationInfo = document.getElementById('locationInfo');
+            const btn = document.getElementById('locationBtn');
+            
+            loading.style.display = 'none';
+            locationInfo.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'تحديد موقعي مرة أخرى';
+
+            const lat = position.coords.latitude;
+            const lng = position.coords.longitude;
+            const accuracy = position.coords.accuracy;
+            
+            // تحديث البيانات في الصفحة
+            document.getElementById('coordinates').textContent = 
+                `خط العرض: ${lat.toFixed(6)} | خط الطول: ${lng.toFixed(6)}`;
+            
+            document.getElementById('accuracy').textContent = 
+                `± ${Math.round(accuracy)} متر`;
+            
+            document.getElementById('timestamp').textContent = 
+                new Date().toLocaleString('ar-EG');
+            
+            // تحديث رابط الخريطة
+            const mapLink = document.getElementById('mapLink');
+            mapLink.href = `https://maps.google.com/?q=${lat},${lng}&z=16`;
+        }
+
+        function showError(error) {
+            const loading = document.getElementById('loading');
+            const errorDiv = document.getElementById('error');
+            const btn = document.getElementById('locationBtn');
+            
+            loading.style.display = 'none';
+            errorDiv.style.display = 'block';
+            btn.disabled = false;
+            btn.textContent = 'تحديد موقعي الآن';
+
+            let message = "حدث خطأ في تحديد الموقع";
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    message = "تم رفض طلب تحديد الموقع. يرجى السماح بمشاركة الموقع.";
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    message = "معلومات الموقع غير متاحة.";
+                    break;
+                case error.TIMEOUT:
+                    message = "انتهت المهلة المحددة لتحديد الموقع.";
+                    break;
+                default:
+                    message = error.message || "حدث خطأ غير معروف";
+                    break;
+            }
+            
+            errorDiv.textContent = message;
+        }
+
+        // إضافة تأثيرات عند التحميل
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('صفحة تحديد الموقع جاهزة للاستخدام');
+        });
+    </script>
+</body>
+</html>
